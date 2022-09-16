@@ -4,7 +4,7 @@ A discord bot that listens to [Rust+](https://rust.facepunch.com/companion) chat
 
 ## Instalation
 
-You have to be on Windows to run the TTS part for now, bacause it uses the built-in TTS on Windows (PRs to make it cross platform without using paid APIs are welcome). You have to also have node.js and ffmpeg installed.
+For Windows you don't have to do anything, for Linux you have to have RHVoice with a language and voice installed. You have to also have node.js and ffmpeg installed.
 
 Clone the repo and install the dependencies:
 
@@ -20,13 +20,10 @@ Copy ```.env.example``` as ```.env``` and fill up the blanks. [Here is a guilde 
 
 ### Running the bot
 
-The app consists of two scripts one is for the communication to the discord and another one is for Rust+. You have to run both of them to get everything working. You can open two terminals and paste this commands to them:
+The app consists of two scripts one is for the communication to the discord and another one is for Rust+. You can run them on separate machines or just run this script for both:
 
 ```bash
-# first terminal
-node voice-bot
-# second terminal
-node rust-listener.js
+npm run start
 ```
 
 If it doesn't work, you probably didn't fill up the ```.env``` values right. Read the errors and fix the env.
@@ -35,4 +32,6 @@ If it doesn't work, you probably didn't fill up the ```.env``` values right. Rea
 
 * ```.joinvoice``` makes the bot join your voice channel
 * ```.shops item name``` searches for the given item in vending machines on the map
+* ```.less item name amount``` searches for the given item for which you can buy something. The prices have to be less then the given amount
 * ```.del n``` deletes the last *n* messages from the chat
+* ```.map``` sends you the map of the server

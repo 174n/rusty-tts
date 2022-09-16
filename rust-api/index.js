@@ -4,7 +4,8 @@ const RustPlus = require('@liamcottle/rustplus.js');
 const fs = require('fs');
 const path = require('path');
 const Fuse = require('fuse.js');
-const fastify = require('fastify')({ logger: true });
+const logger = require('../logger');
+const fastify = require('fastify')({ logger: logger.config });
 
 let items, fuse, itemsMap, rustInfo, rustMap;
 const getAlpha = () => Array.from({ length: 26 }).map((_, i) => String.fromCharCode("A".charCodeAt() + i));
@@ -31,13 +32,13 @@ const fetchShops = () => {
 }
 
 rustplus.on('connected', () => {
-  console.log(JSON.stringify({ status: 'connected', time: Date.now() }));
-  rustplus.sendTeamMessage('Hello from rustplus.js!');
+  logger.log(`Connected to Rust+`);
+  rustplus.sendTeamMessage('Hello from rusty-tts!');
   rustplus.getInfo(info => {
     rustInfo = info.response.info;
   });
   rustplus.getMap(map => {
-    fs.writeFileSync(path.join(__dirname, 'cache', 'map.jpg'), Buffer.from(map.response.map.jpgImage, "base64"));
+    fs.writeFileSync(path.join(__dirname, '..', 'cache', 'map.jpg'), Buffer.from(map.response.map.jpgImage, "base64"));
     rustMap = {};
     Object.keys(map.response.map).forEach(k => {
       if (!k.match(/jpg/g)) {
@@ -54,14 +55,14 @@ rustplus.on('error', (err) => {
 rustplus.on('message', async msg => {
   if (msg.response?.mapMarkers || msg.response?.map)
     return;
-  console.log(JSON.stringify(msg));
+  logger.log(msg);
   const chatMsg = msg?.broadcast?.teamMessage?.message;
   if (chatMsg && chatMsg.name && chatMsg.message) {
-    console.log('message: ', chatMsg);
+    logger.log(`Message: ${JSON.stringify(chatMsg)}`);
     try {
       await fetch(`${process.env.VOICE_API_ADDRESS}:${process.env.VOICE_API_PORT}/play/${encodeURIComponent(chatMsg.message)}`);
     } catch (err) {
-      console.error('Error requesting voice');
+      logger.error('Error requesting voice');
     }
     await fetch(process.env.DISCORD_WEBHOOK, {
       method: 'POST',
@@ -95,7 +96,7 @@ fastify.get('/message/:username/:message', async (request, reply) => {
     rustplus.sendTeamMessage(`<${username}> ${message}`);
     return { success: true };
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return { success: false };
   }
 });
@@ -168,7 +169,7 @@ fastify.get('/sell/:query/:amount', async (request, reply) => {
 
 const init = async () => {
   const itemsUrl = 'https://gist.githubusercontent.com/Marcuzz/9e01a39a8f5f83dc673bfc6f6fa4aacc/raw/10429a847102811a243887b5ac48688f35bb3d64/items.json';
-  const itemsPath = path.join(__dirname, 'cache', 'items.json');
+  const itemsPath = path.join(__dirname, '..', 'cache', 'items.json');
 
   try {
     fs.accessSync(itemsPath, fs.constants.F_OK)

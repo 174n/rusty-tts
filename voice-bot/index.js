@@ -3,28 +3,23 @@ require('dotenv').config();
 // Discord
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] });
-const { createAudioPlayer, joinVoiceChannel, createAudioResource, StreamType, NoSubscriberBehavior } = require('@discordjs/voice');
-
-// HTTP
-const fastify = require('fastify')({ logger: true });
+const { createAudioPlayer, joinVoiceChannel, createAudioResource, NoSubscriberBehavior } = require('@discordjs/voice');
 
 // Utils
 const { onShutdown } = require('node-graceful-shutdown');
-const { createReadStream } = require('node:fs');
 const fetch = require('node-fetch');
 const path = require('path');
 
 // Local
-const GenVoice = require('./GenVoice');
-const genVoice = new GenVoice();
+const logger = require('../logger');
+const genVoice = require('./gen-voice');
 
-(async () => {
-  await genVoice.init();
-})();
+// HTTP
+const fastify = require('fastify')({ logger: logger.config });
 
 
 client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+  logger.log(`Logged in as ${client.user.tag}!`);
 });
 
 let voiceConnection, subscription;
@@ -35,22 +30,20 @@ const audioPlayer = createAudioPlayer({
   },
 });
 audioPlayer.on('error', error => {
-  console.error(`Error: ${error.message} with resource ${error?.resource?.metadata?.title}`);
+  logger.error(`Error: ${error.message} with resource ${error?.resource?.metadata?.title}`);
 });
 
 const play = async voicePath => {
   if (!voiceConnection) {
-    console.error('No voice connection');
+    logger.error('No voice connection');
     return false;
   }
 
-  const resource = createAudioResource(createReadStream(voicePath, {
-    inputType: StreamType.OggOpus,
-  }));
+  const resource = createAudioResource(voicePath);
   if (audioPlayer.checkPlayable(resource)) {
     subscription = voiceConnection.subscribe(audioPlayer);
   }
-  console.log(JSON.stringify({ playing: voicePath, time: Date.now() }));
+  logger.log(`Playing: ${voicePath}`);
   audioPlayer.play(resource);
   return true;
 }
@@ -74,7 +67,7 @@ client.on('messageCreate', async msg => {
   if (!msg?.content || msg.author?.bot || msg.author?.system)
     return;
 
-  console.log(msg?.content);
+  logger.log(msg?.content);
   const params = msg?.content?.slice(1)?.split(' ');
 
   if (!params || msg.content.slice(0, 1) !== process.env.DISCORD_PREFIX) {
@@ -83,7 +76,7 @@ client.on('messageCreate', async msg => {
     try {
       await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/message/${username}/${encodeURIComponent(message)}`);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       msg.reply({
         embeds: [
           getEmbed({
@@ -166,7 +159,7 @@ client.on('messageCreate', async msg => {
       try {
         results = (await (await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/shops/${query}`)).json())?.results;
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         msg.reply({
           embeds: [
             getEmbed({
@@ -214,7 +207,7 @@ client.on('messageCreate', async msg => {
       try {
         resultsSell = (await (await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/sell/${querySell}/${amount}`)).json())?.results;
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         msg.reply({
           embeds: [
             getEmbed({
@@ -295,7 +288,7 @@ fastify.get('/play/:text', async (request, reply) => {
     const filePath = await genVoice.gen(text);
     play(filePath);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return reply.code(500).send({ error: true });
   }
   return reply.code(200).send({ text, success: true });
