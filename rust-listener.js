@@ -84,7 +84,7 @@ fastify.get('/', async (request, reply) => {
   return {
     version: require('./package.json').version,
     info: 'Rusty server',
-    routes: ['GET /shops/:query', 'GET /message/:message']
+    routes: ['GET /shops/:query', 'GET /message/:message', 'GET /sell/:query/:amount']
   };
 });
 
@@ -129,6 +129,40 @@ fastify.get('/shops/:query', async (request, reply) => {
       };
     })
     .filter(s => s.items.find(item => foundItemIds.includes(item.itemId)));
+  return reply.code(200).send({ results: results, success: true });
+});
+
+fastify.get('/sell/:query/:amount', async (request, reply) => {
+  const shops = await fetchShops();
+  const query = request.params.query.replace(/[^A-zА-яЁё,.-?!@& ]/g, '').slice(0, 200);
+  const amount = parseInt(request.params.amount);
+  const foundItemIds = fuse.search(query).slice(0, 5).map(item => parseInt(item.item.id));
+  const results = shops
+    .filter(s => s.sellOrders.find(item => foundItemIds.includes(item.currencyId)))
+    .map(res => {
+      return {
+        name: res.name,
+        x: res.x,
+        y: res.y,
+        square: getGridPos(res.x, res.y),
+        items: res.sellOrders
+          .map(o => ({
+            item: itemsMap.get(o.itemId)?.displayName,
+            itemId: o.itemId,
+            image: itemsMap.get(o.itemId)?.image,
+            quantity: o.quantity,
+            currency: itemsMap.get(o.currencyId)?.displayName,
+            currencyId: o.currencyId,
+            costPerItem: o.costPerItem,
+            amountInStock: o.amountInStock,
+            itemIsBlueprint: o.itemIsBlueprint,
+            currencyIsBlueprint: o.currencyIsBlueprint
+          }))
+          .filter(o => o.amountInStock > 0 && foundItemIds.includes(o.currencyId) && o.costPerItem <= amount)
+      };
+    })
+    .filter(s => s.items.find(item => foundItemIds.includes(item.currencyId)))
+    .sort((a, b) => a.costPerItem - b.costPerItem);
   return reply.code(200).send({ results: results, success: true });
 });
 

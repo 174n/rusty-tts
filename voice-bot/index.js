@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 // Discord
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates] });
 const { createAudioPlayer, joinVoiceChannel, createAudioResource, StreamType, NoSubscriberBehavior } = require('@discordjs/voice');
 
@@ -12,6 +12,7 @@ const fastify = require('fastify')({ logger: true });
 const { onShutdown } = require('node-graceful-shutdown');
 const { createReadStream } = require('node:fs');
 const fetch = require('node-fetch');
+const path = require('path');
 
 // Local
 const GenVoice = require('./GenVoice');
@@ -42,7 +43,7 @@ const play = async voicePath => {
     console.error('No voice connection');
     return false;
   }
-    
+
   const resource = createAudioResource(createReadStream(voicePath, {
     inputType: StreamType.OggOpus,
   }));
@@ -57,7 +58,9 @@ const play = async voicePath => {
 const commands = {
   JOINVOICE: 'joinvoice',
   DELETE: 'del',
-  SEARCH_SHOPS: 'shops'
+  SEARCH_SHOPS: 'shops',
+  SEARCH_SELL: 'sell',
+  MAP: 'map'
 }
 
 const getEmbed = ({ color, title, text }) => new EmbedBuilder()
@@ -202,6 +205,67 @@ client.on('messageCreate', async msg => {
             }))
           )
         ]
+      });
+      break;
+    case commands.SEARCH_SELL:
+      const querySell = params.slice(1, -1).join(' ').replace(/[^A-zА-яЁё0-9 ]/g, '').slice(0, 200);
+      const amount = parseInt(params[params.length - 1]);
+      let resultsSell;
+      try {
+        resultsSell = (await (await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/sell/${querySell}/${amount}`)).json())?.results;
+      } catch (err) {
+        console.error(err);
+        msg.reply({
+          embeds: [
+            getEmbed({
+              color: 0xff5454,
+              title: 'Error',
+              text: 'There was some kind of error'
+            })
+          ]
+        });
+        break;
+      }
+      if (!resultsSell?.length) {
+        msg.reply({
+          embeds: [
+            getEmbed({
+              color: 0xff5454,
+              title: 'Error',
+              text: `There was some kind of error (no results) for query "${querySell}"`
+            })
+          ]
+        });
+        break;
+      }
+      msg.reply({
+        embeds: [
+          getEmbed({
+            color: 0xffaf30,
+            title: `Results to sell ${amount} of "${querySell}"`,
+            text: `Found ${resultsSell.length} shops.`
+          }).setThumbnail(resultsSell?.[0]?.items?.[0]?.image || 'https://i.imgur.com/s9qXIYM.jpg').addFields(
+            resultsSell.map(r => ({
+              name: `${r.name} (${r.square})`,
+              value: r.items.map(item =>
+                `${item.quantity} ${item.item}${item.itemIsBlueprint ? ' (BP)' : ''} for ${item.costPerItem} ${item.currency}${item.currencyIsBlueprint ? ' (BP)' : ''} (${item.amountInStock} in stock)`
+              ).join(', ')
+            }))
+          )
+        ]
+      });
+      break;
+    case commands.MAP:
+      const file = new AttachmentBuilder(path.join(__dirname, '..', 'cache', 'map.jpg'));
+      msg.reply({
+        embeds: [
+          getEmbed({
+            color: 0x00ff11,
+            title: 'World map',
+            text: 'Here is your map'
+          }).setImage('attachment://map.jpg')
+        ],
+        files: [file]
       });
       break;
     default:
