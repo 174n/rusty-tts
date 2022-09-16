@@ -2,7 +2,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "start": "concurrently -n RUST,VOICE -c bgBlue.bold,bgMagenta.bold \"node rust-api\" \"node voice-bot\""
+    "start": "concurrently --restart-tries -1 -n RUST,VOICE -c bgBlue.bold,bgMagenta.bold \"node rust-api\" \"node voice-bot\""
   },
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
