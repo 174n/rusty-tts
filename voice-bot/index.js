@@ -25,7 +25,7 @@ client.on('ready', () => {
   logger.log(__('discord.loggedIn', { user: client.user.tag }));
 });
 
-let voiceConnection, subscription;
+let voiceConnection, subscription, voiceInterval;
 
 const audioPlayer = createAudioPlayer({
   behaviors: {
@@ -116,10 +116,15 @@ client.on('messageCreate', async msg => {
       });
       subscription = voiceConnection.subscribe(audioPlayer);
 
-      setInterval(() => {
-        if (!msg.member?.voice.channel || msg.member?.voice.channel.members.length === 0)
+      if (voiceInterval)
+        clearInterval(voiceInterval);
+
+      voiceInterval = setInterval(() => {
+        if (!msg.member?.voice.channel || msg.member?.voice.channel.members.length === 0) {
           subscription.unsubscribe();
           voiceConnection.destroy();
+          clearInterval(voiceInterval);
+        }
       }, 1000 * 60 * 2);
 
       msg.reply({
