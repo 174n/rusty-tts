@@ -1,0 +1,78 @@
+{
+	"title": "Rusty TTS",
+	"audioplayer": {
+		"error": "Error: \"{{error}}\" with ressource \"{{ressource}}\"",
+		"noVoice": "No voice connection",
+		"playing": "Playing {{file}}"
+	},
+	"discord": {
+		"loggedIn": "Logged in as {{user}}!",
+		"rustServerError": {
+			"title": "Error",
+			"text": "The message is not delivered to the rust server"
+		},
+		"joinVoiceError": {
+			"title": "Error",
+			"text": "You have to join a voice channel first"
+		},
+		"joinVoiceSuccess": {
+			"title": "Joined voice",
+			"text": "Successfully joined channel \"{{channel}}\". Have a good time."
+		},
+		"leaveChannel": {
+			"title": "Left the voice channel",
+			"text": "Leaving the voice channel. Come back soon."
+		},
+		"deleteMessagesError": {
+			"title": "Error",
+			"text": "There was some kind of error. Maybe the messages are older then 14 days or something"
+		},
+		"notAllowed": {
+			"title": "Not allowed",
+			"text": "You have to be an admin to do that"
+		},
+		"someError": {
+			"title": "Error",
+			"text": "There was some kind of error"
+		},
+		"noResultsOrError": {
+			"title": "Error",
+			"text": "There was some kind of error (no results) for query \"{{query}}\""
+		},
+		"buyResults": {
+			"title": "Results for query \"{{query}}\"",
+			"text": "Found {{len}} shops."
+		},
+		"buyResult": "{{quantity}} {{item}}{{isBP}} for {{cost}} {{currency}}{{isCurrencyBP}} ({{inStock}} in stock)",
+		"sellResults": {
+			"title": "Results to sell {{amount}} of \"{{query}}\"",
+			"text": "Found {{len}} shops."
+		},
+		"sellResult": "{{quantity}} {{item}}{{isBP}} for {{cost}} {{currency}}{{isCurrencyBP}} ({{inStock}} in stock)",
+		"mapShow": {
+			"title": "World map",
+			"text": "Here is your map"
+		},
+		"cmdNotFound": {
+			"title": "Command not found",
+			"text": "Available commands: {{commands}}"
+		},
+		"info": {
+			"wipeTime": "Last wiped",
+			"players": "Players",
+			"queued": "In queue",
+			"map": "Map",
+			"mapTitle": "{{mapType}} with seed {{seed}} and size {{size}}"
+		}
+	},
+	"voice": {
+		"generating": "Generating voice for text \"{{text}}\" to \"{{filePath}}\"",
+		"fileNotFound": "File \"{{file}}\" not found"
+	},
+	"rust": {
+		"connected": "Connected to Rust+",
+		"hello": "Hello from rusty-tts!",
+		"message": "Message: ",
+		"voiceError": "Error requesting voice"
+	}
+}

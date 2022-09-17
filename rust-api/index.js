@@ -6,10 +6,11 @@ const path = require('path');
 const Fuse = require('fuse.js');
 const logger = require('../logger');
 const fastify = require('fastify')({ logger: logger.config });
+const { __ } = require('../i18n');
 
 let items, fuse, itemsMap, rustInfo, rustMap;
 const getAlpha = () => Array.from({ length: 26 }).map((_, i) => String.fromCharCode("A".charCodeAt() + i));
-const gridX = [ ...getAlpha(), ...getAlpha().map(a => 'A'+a) ];
+const gridX = [...getAlpha(), ...getAlpha().map(a => 'A' + a)];
 
 const getGridPos = (x, y) => {
   if (!rustMap || !rustInfo)
@@ -32,8 +33,8 @@ const fetchShops = () => {
 }
 
 rustplus.on('connected', () => {
-  logger.log(`Connected to Rust+`);
-  rustplus.sendTeamMessage('Hello from rusty-tts!');
+  logger.log(__('rust.connected'));
+  rustplus.sendTeamMessage(__('rust.hello'));
   rustplus.getInfo(info => {
     rustInfo = info.response.info;
   });
@@ -42,14 +43,14 @@ rustplus.on('connected', () => {
     rustMap = {};
     Object.keys(map.response.map).forEach(k => {
       if (!k.match(/jpg/g)) {
-       rustMap[k] = map.response.map[k];
+        rustMap[k] = map.response.map[k];
       }
     });
   })
 });
 
 rustplus.on('error', (err) => {
-  console.err(`[${Date.now()}] {"status":"error","error":${err.toString()}}`);
+  logger.error(err.toString());
 });
 
 rustplus.on('message', async msg => {
@@ -58,11 +59,11 @@ rustplus.on('message', async msg => {
   logger.log(msg);
   const chatMsg = msg?.broadcast?.teamMessage?.message;
   if (chatMsg && chatMsg.name && chatMsg.message) {
-    logger.log(`Message: ${JSON.stringify(chatMsg)}`);
+    logger.log(__('rust.message') + JSON.stringify(chatMsg));
     try {
       await fetch(`${process.env.VOICE_API_ADDRESS}:${process.env.VOICE_API_PORT}/play/${encodeURIComponent(chatMsg.message)}`);
     } catch (err) {
-      logger.error('Error requesting voice');
+      logger.error(__('rust.voiceError'));
     }
     await fetch(process.env.DISCORD_WEBHOOK, {
       method: 'POST',
@@ -83,9 +84,9 @@ rustplus.on('message', async msg => {
 
 fastify.get('/', async (request, reply) => {
   return {
-    version: require('./package.json').version,
+    version: require('../package.json').version,
     info: 'Rusty server',
-    routes: ['GET /shops/:query', 'GET /message/:message', 'GET /sell/:query/:amount']
+    routes: ['GET /shops/:query', 'GET /message/:message', 'GET /sell/:query/:amount', 'GET /info']
   };
 });
 
@@ -99,6 +100,14 @@ fastify.get('/message/:username/:message', async (request, reply) => {
     logger.error(err);
     return { success: false };
   }
+});
+
+fastify.get('/info', async (request, reply) => {
+  const info = await (new Promise(res => rustplus.getInfo(info => {
+    rustInfo = info.response.info;
+    res(rustInfo);
+  })));
+  return info;
 });
 
 fastify.get('/shops/:query', async (request, reply) => {

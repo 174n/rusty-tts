@@ -17,9 +17,12 @@ const genVoice = require('./gen-voice');
 // HTTP
 const fastify = require('fastify')({ logger: logger.config });
 
+// Translation
+const { __ } = require('../i18n');
+
 
 client.on('ready', () => {
-  logger.log(`Logged in as ${client.user.tag}!`);
+  logger.log(__('discord.loggedIn', { user: client.user.tag }));
 });
 
 let voiceConnection, subscription;
@@ -30,12 +33,12 @@ const audioPlayer = createAudioPlayer({
   },
 });
 audioPlayer.on('error', error => {
-  logger.error(`Error: ${error.message} with resource ${error?.resource?.metadata?.title}`);
+  logger.error(__('audioplayer.error', { error: error.message, ressource: error?.resource?.metadata?.title }));
 });
 
 const play = async voicePath => {
   if (!voiceConnection) {
-    logger.error('No voice connection');
+    logger.error(__('audioplayer.noVoice'));
     return false;
   }
 
@@ -43,7 +46,7 @@ const play = async voicePath => {
   if (audioPlayer.checkPlayable(resource)) {
     subscription = voiceConnection.subscribe(audioPlayer);
   }
-  logger.log(`Playing: ${voicePath}`);
+  logger.log(__('audioplayer.playing', { file: voicePath }));
   audioPlayer.play(resource);
   return true;
 }
@@ -54,7 +57,8 @@ const commands = {
   DELETE: 'del',
   SEARCH_SHOPS: 'buy',
   SEARCH_SELL: 'sell',
-  MAP: 'map'
+  MAP: 'map',
+  INFO: 'info'
 }
 
 const getEmbed = ({ color, title, text }) => new EmbedBuilder()
@@ -62,7 +66,7 @@ const getEmbed = ({ color, title, text }) => new EmbedBuilder()
   .setTitle(title)
   .setDescription(text)
   .setTimestamp()
-  .setFooter({ text: 'Rusty TTS' });
+  .setFooter({ text: __('title') });
 
 client.on('messageCreate', async msg => {
   if (!msg?.content || msg.author?.bot || msg.author?.system)
@@ -82,8 +86,8 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0xff5454,
-            title: 'Error',
-            text: 'The message is not delivered to the rust server'
+            title: __('discord.rustServerError.title'),
+            text: __('discord.rustServerError.text')
           })
         ]
       });
@@ -98,8 +102,8 @@ client.on('messageCreate', async msg => {
           embeds: [
             getEmbed({
               color: 0xff5454,
-              title: 'Error',
-              text: 'You have to join a voice channel first'
+              title: __('discord.joinVoiceError.title'),
+              text: __('discord.joinVoiceError.text')
             })
           ]
         });
@@ -113,7 +117,7 @@ client.on('messageCreate', async msg => {
       subscription = voiceConnection.subscribe(audioPlayer);
 
       setInterval(() => {
-        if (msg.member?.voice.channel.members.length === 0)
+        if (!msg.member?.voice.channel || msg.member?.voice.channel.members.length === 0)
           subscription.unsubscribe();
           voiceConnection.destroy();
       }, 1000 * 60 * 2);
@@ -122,8 +126,8 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0x6854ff,
-            title: 'Joined voice',
-            text: `Successfully joined channel "${msg.member?.voice.channel.name}". Have a good time`
+            title: __('discord.joinVoiceSuccess.title'),
+            text: __('discord.joinVoiceSuccess.text', { channel: msg.member?.voice.channel.name })
           }).setThumbnail('https://i.imgur.com/DjVpMJ5.jpg')
         ]
       });
@@ -135,9 +139,9 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0x6854ff,
-            title: 'Left the voice channel',
-            text: `Leaving the voice channel. Come back soon`
-          }).setThumbnail('https://i.imgur.com/rGD6aQH.jpg')
+            title: __('discord.leaveChannel.title'),
+            text: __('discord.leaveChannel.text')
+          }).setThumbnail('https://i.imgur.com/j4l6U5t.jpg')
         ]
       });
       break;
@@ -153,8 +157,8 @@ client.on('messageCreate', async msg => {
               embeds: [
                 getEmbed({
                   color: 0xff5454,
-                  title: 'Error',
-                  text: 'There was some kind of error. Maybe the messages are older then 14 days or something'
+                  title: __('discord.deleteMessagesError.title'),
+                  text: __('discord.deleteMessagesError.text')
                 })
               ]
             });
@@ -167,8 +171,8 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0xff5454,
-            title: 'Not allowed',
-            text: 'You have to be an admin to do that'
+            title: __('discord.notAllowed.title'),
+            text: __('discord.notAllowed.text')
           })
         ]
       });
@@ -184,8 +188,8 @@ client.on('messageCreate', async msg => {
           embeds: [
             getEmbed({
               color: 0xff5454,
-              title: 'Error',
-              text: 'There was some kind of error'
+              title: __('discord.someError.title'),
+              text: __('discord.someError.text')
             })
           ]
         });
@@ -196,8 +200,8 @@ client.on('messageCreate', async msg => {
           embeds: [
             getEmbed({
               color: 0xff5454,
-              title: 'Error',
-              text: `There was some kind of error (no results) for query "${query}"`
+              title: __('discord.noResultsOrError.title'),
+              text: __('discord.noResultsOrError.text', { query })
             })
           ]
         });
@@ -207,13 +211,21 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0x2eff00,
-            title: `Results for query "${query}"`,
-            text: `Found ${results.length} shops.`
+            title: __('discord.buyResults.title', { query }),
+            text: __('discord.buyResults.text', { len: results.length })
           }).setThumbnail(results?.[0]?.items?.[0]?.image || 'https://i.imgur.com/s9qXIYM.jpg').addFields(
             results.map(r => ({
               name: `${r.name} (${r.square})`,
               value: r.items.map(item =>
-                `${item.quantity} ${item.item}${item.itemIsBlueprint ? ' (BP)' : ''} for ${item.costPerItem} ${item.currency}${item.currencyIsBlueprint ? ' (BP)' : ''} (${item.amountInStock} in stock)`
+                __('discord.buyResult', {
+                  quantity: item.quantity,
+                  item: item.item,
+                  isBP: item.itemIsBlueprint ? ' (BP)' : '',
+                  cost: item.costPerItem,
+                  currency: item.currency,
+                  isCurrencyBP: item.currencyIsBlueprint ? ' (BP)' : '',
+                  inStock: item.amountInStock
+                })
               ).join(', ')
             }))
           )
@@ -232,8 +244,8 @@ client.on('messageCreate', async msg => {
           embeds: [
             getEmbed({
               color: 0xff5454,
-              title: 'Error',
-              text: 'There was some kind of error'
+              title: __('discord.someError.title'),
+              text: __('discord.someError.text')
             })
           ]
         });
@@ -244,8 +256,8 @@ client.on('messageCreate', async msg => {
           embeds: [
             getEmbed({
               color: 0xff5454,
-              title: 'Error',
-              text: `There was some kind of error (no results) for query "${querySell}"`
+              title: __('discord.noResultsOrError.title'),
+              text: __('discord.noResultsOrError.text', { query: querySell })
             })
           ]
         });
@@ -255,13 +267,21 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0xffaf30,
-            title: `Results to sell ${amount} of "${querySell}"`,
-            text: `Found ${resultsSell.length} shops.`
+            title: __('discord.sellResults.title', { amount, query: querySell }),
+            text: __('discord.sellResults.text', { len: resultsSell.length }),
           }).setThumbnail(resultsSell?.[0]?.items?.[0]?.image || 'https://i.imgur.com/s9qXIYM.jpg').addFields(
             resultsSell.map(r => ({
               name: `${r.name} (${r.square})`,
               value: r.items.map(item =>
-                `${item.quantity} ${item.item}${item.itemIsBlueprint ? ' (BP)' : ''} for ${item.costPerItem} ${item.currency}${item.currencyIsBlueprint ? ' (BP)' : ''} (${item.amountInStock} in stock)`
+                __('discord.buyResult', {
+                  quantity: item.quantity,
+                  item: item.item,
+                  isBP: item.itemIsBlueprint ? ' (BP)' : '',
+                  cost: item.costPerItem,
+                  currency: item.currency,
+                  isCurrencyBP: item.currencyIsBlueprint ? ' (BP)' : '',
+                  inStock: item.amountInStock
+                })
               ).join(', ')
             }))
           )
@@ -274,11 +294,73 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0x00ff11,
-            title: 'World map',
-            text: 'Here is your map'
+            title: __('discord.mapShow.title'),
+            text: __('discord.mapShow.text')
           }).setImage('attachment://map.jpg')
         ],
         files: [file]
+      });
+      break;
+    case commands.INFO:
+      let info;
+      try {
+        info = await (await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/info`)).json();
+      } catch (err) {
+        logger.error(err);
+        msg.reply({
+          embeds: [
+            getEmbed({
+              color: 0xff5454,
+              title: __('discord.someError.title'),
+              text: __('discord.someError.text')
+            })
+          ]
+        });
+        break;
+      }
+      if (!info?.name) {
+        logger.error(__('discord.rustServerError.text'));
+        msg.reply({
+          embeds: [
+            getEmbed({
+              color: 0xff5454,
+              title: __('discord.someError.title'),
+              text: __('discord.someError.text')
+            })
+          ]
+        });
+        break;
+      }
+
+      msg.reply({
+        embeds: [
+          getEmbed({
+            color: 0x2dd1ff,
+            title: info.name,
+            text: info.map
+          }).setThumbnail(info.headerImage)
+            .addFields([
+              {
+                name: __('discord.info.wipeTime'),
+                value: info.wipeTime.toString(),
+                inline: true
+              },
+              {
+                name: __('discord.info.players'),
+                value: `${info.players}/${info.maxPlayers}`,
+                inline: true
+              },
+              {
+                name: __('discord.info.queued'),
+                value: info.queuedPlayers.toString(),
+                inline: true
+              },
+              {
+                name: __('discord.info.map'),
+                value: __('discord.info.mapTitle', { mapType: info.map, seed: info.seed, size: info.mapSize })
+              }
+            ])
+        ]
       });
       break;
     default:
@@ -286,8 +368,8 @@ client.on('messageCreate', async msg => {
         embeds: [
           getEmbed({
             color: 0xff5454,
-            title: 'Command not found',
-            text: 'Available commands: ' + Object.values(commands).join(', ')
+            title: __('discord.cmdNotFound.title'),
+            text: __('discord.cmdNotFound.text', { commands: Object.values(commands).join(', ') })
           }).setThumbnail('https://i.imgur.com/UK4APa4.jpg')
         ]
       });

@@ -5,6 +5,7 @@ const exec = util.promisify(require('child_process').exec);
 const path = require('path');
 const { speak, getInstalledVoices } = require("windows-tts");
 const logger = require('../logger');
+const { __ } = require('../i18n');
 
 const sha1 = input => crypto.createHash('sha1').update(input).digest('hex');
 
@@ -60,7 +61,7 @@ module.exports = {
   async genFreshLinux(text) {
     const { filePath, filename } = this.getFilePath(text);
 
-    logger.log(`Generating voice for text "${text}" to "${filePath}"`);
+    logger.log(__('generating.generating', { text, filePath }));
 
     try {
       await exec(`echo "${text.replace(/"\\/g, '')
@@ -76,14 +77,14 @@ module.exports = {
     try {
       fs.accessSync(filePath + ('.' + ext), fs.constants.F_OK)
     } catch (_) {
-      logger.error(`File "${filePath}.${ext}" not found`);
+      logger.error(__('voice.fileNotFound', { file: filePath + '.' + ext }));
     }
   },
 
   async genFreshWin(text) {
     const { filePath, filename } = this.getFilePath(text);
 
-    logger.log(`Generating voice for text "${text}" to "${filePath}"`);
+    logger.log(__('generating.generating', { text, filePath }));
 
     const wavBuffer = await speak(text, { voice: getVoice(true), rate: getRate(true) });
     await fs.promises.writeFile(filePath + '.wav', wavBuffer);
@@ -104,7 +105,7 @@ module.exports = {
     try {
       fs.accessSync(filePath + ('.' + ext), fs.constants.F_OK)
     } catch (_) {
-      logger.error(`File "${filePath}.${ext}" not found`);
+      logger.error(__('voice.fileNotFound', { file: filePath + '.' + ext }));
     }
   }
 
