@@ -50,8 +50,9 @@ const play = async voicePath => {
 
 const commands = {
   JOINVOICE: 'joinvoice',
+  LEAVEVOICE: 'leavevoice',
   DELETE: 'del',
-  SEARCH_SHOPS: 'shops',
+  SEARCH_SHOPS: 'buy',
   SEARCH_SELL: 'sell',
   MAP: 'map'
 }
@@ -111,6 +112,12 @@ client.on('messageCreate', async msg => {
       });
       subscription = voiceConnection.subscribe(audioPlayer);
 
+      setInterval(() => {
+        if (msg.member?.voice.channel.members.length === 0)
+          subscription.unsubscribe();
+          voiceConnection.destroy();
+      }, 1000 * 60 * 2);
+
       msg.reply({
         embeds: [
           getEmbed({
@@ -118,6 +125,19 @@ client.on('messageCreate', async msg => {
             title: 'Joined voice',
             text: `Successfully joined channel "${msg.member?.voice.channel.name}". Have a good time`
           }).setThumbnail('https://i.imgur.com/DjVpMJ5.jpg')
+        ]
+      });
+      break;
+    case commands.LEAVEVOICE:
+      subscription.unsubscribe();
+      voiceConnection.destroy();
+      msg.reply({
+        embeds: [
+          getEmbed({
+            color: 0x6854ff,
+            title: 'Left the voice channel',
+            text: `Leaving the voice channel. Come back soon`
+          }).setThumbnail('https://i.imgur.com/rGD6aQH.jpg')
         ]
       });
       break;

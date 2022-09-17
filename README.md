@@ -31,7 +31,8 @@ If it doesn't work, you probably didn't fill up the ```.env``` values right. Rea
 ### Commands
 
 * ```.joinvoice``` makes the bot join your voice channel
-* ```.shops item name``` searches for the given item in vending machines on the map
-* ```.less item name amount``` searches for the given item for which you can buy something. The prices have to be less then the given amount
+* ```.leavevoice``` makes the bot leave voice channel
+* ```.buy item name``` searches for the given item in vending machines on the map
+* ```.sell item name amount``` searches for the given item for which you can buy something. The prices have to be less then the given amount
 * ```.del n``` deletes the last *n* messages from the chat
 * ```.map``` sends you the map of the server
