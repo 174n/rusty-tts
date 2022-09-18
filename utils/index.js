@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 module.exports = {
   timeout: (prom, time) =>
     Promise.race([prom, new Promise((_r, rej) => setTimeout(rej, time))]),
