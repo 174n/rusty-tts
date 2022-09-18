@@ -32,7 +32,7 @@ const fetchShops = async () => {
     logger.error(err);
     process.exit();
   }
-  return map.response.mapMarkers.markers.filter(m => m.sellOrders);
+  return map.mapMarkers.markers.filter(m => m.sellOrders);
 }
 
 rustplus.on('connected', () => {
@@ -108,7 +108,7 @@ fastify.get('/message/:username/:message', async (request, reply) => {
 fastify.get('/info', async (request, reply) => {
   let info;
   try {
-    info = (await rustplus.sendRequestAsync({ getInfo: {} }, 3000))?.response?.info;
+    info = (await rustplus.sendRequestAsync({ getInfo: {} }, 3000))?.info;
   } catch (err) {
     logger.error(err);
     process.exit();
