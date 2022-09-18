@@ -58,7 +58,8 @@ const commands = {
   SEARCH_SHOPS: 'buy',
   SEARCH_SELL: 'sell',
   MAP: 'map',
-  INFO: 'info'
+  INFO: 'info',
+  RESTART_RUST: 'restart'
 }
 
 const getEmbed = ({ color, title, text }) => new EmbedBuilder()
@@ -365,6 +366,19 @@ client.on('messageCreate', async msg => {
                 value: __('discord.info.mapTitle', { mapType: info.map, seed: info.seed, size: info.mapSize })
               }
             ])
+        ]
+      });
+      break;
+    case commands.RESTART_RUST:
+      await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/info`);
+
+      msg.reply({
+        embeds: [
+          getEmbed({
+            color: 0xff5454,
+            title: __('rust.restart.title'),
+            text: __('rust.restart.text')
+          })
         ]
       });
       break;

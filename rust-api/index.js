@@ -24,12 +24,15 @@ const getGridPos = (x, y) => {
 
 const rustplus = new RustPlus(process.env.RUST_SERVER_IP, process.env.RUST_SERVER_PORT, process.env.RUST_USER_ID, process.env.RUST_USER_TOKEN);
 
-const fetchShops = () => {
-  return new Promise((resolve, reject) => {
-    rustplus.getMapMarkers(map => {
-      resolve(map.response.mapMarkers.markers.filter(m => m.sellOrders));
-    });
-  });
+const fetchShops = async () => {
+  let map;
+  try {
+    map = await rustplus.sendRequestAsync({ getMapMarkers: {} });
+  } catch (err) {
+    logger.error(err);
+    process.exit();
+  }
+  return map.response.mapMarkers.markers.filter(m => m.sellOrders);
 }
 
 rustplus.on('connected', () => {
@@ -103,10 +106,13 @@ fastify.get('/message/:username/:message', async (request, reply) => {
 });
 
 fastify.get('/info', async (request, reply) => {
-  const info = await (new Promise(res => rustplus.getInfo(info => {
-    rustInfo = info.response.info;
-    res(rustInfo);
-  })));
+  let info;
+  try {
+    info = (await rustplus.sendRequestAsync({ getInfo: {} }, 3000))?.response?.info;
+  } catch (err) {
+    logger.error(err);
+    process.exit();
+  };
   return info;
 });
 

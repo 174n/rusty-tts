@@ -73,6 +73,10 @@
 		"connected": "Connected to Rust+",
 		"hello": "Hello from rusty-tts!",
 		"message": "Message: ",
-		"voiceError": "Error requesting voice"
+		"voiceError": "Error requesting voice",
+		"restart": {
+			"title": "Restart",
+			"text": "If it was broken it was restarted"
+		}
 	}
 }

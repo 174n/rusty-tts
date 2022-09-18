@@ -6,8 +6,7 @@ const path = require('path');
 const { speak, getInstalledVoices } = require("windows-tts");
 const logger = require('../logger');
 const { __ } = require('../i18n');
-
-const sha1 = input => crypto.createHash('sha1').update(input).digest('hex');
+const { sha1 } = require('../utils');
 
 const ext = process.platform === "win32" ? 'ogg' : 'wav';
 const getRate = isWin => (process.env.TTS_RATE || 1.5) * (isWin ? 1 : 100);
@@ -61,7 +60,7 @@ module.exports = {
   async genFreshLinux(text) {
     const { filePath, filename } = this.getFilePath(text);
 
-    logger.log(__('generating.generating', { text, filePath }));
+    logger.log(__('voice.generating', { text, filePath }));
 
     try {
       await exec(`echo "${text.replace(/"\\/g, '')
@@ -84,7 +83,7 @@ module.exports = {
   async genFreshWin(text) {
     const { filePath, filename } = this.getFilePath(text);
 
-    logger.log(__('generating.generating', { text, filePath }));
+    logger.log(__('voice.generating', { text, filePath }));
 
     const wavBuffer = await speak(text, { voice: getVoice(true), rate: getRate(true) });
     await fs.promises.writeFile(filePath + '.wav', wavBuffer);
