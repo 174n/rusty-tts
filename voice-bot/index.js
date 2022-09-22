@@ -79,6 +79,17 @@ client.on('messageCreate', async msg => {
   if (!params || msg.content.slice(0, 1) !== process.env.DISCORD_PREFIX) {
     const message = msg.content.replace(/[^A-zА-яЁё0-9,.-?!@& ]+/g, '');
     const username = msg.author.username.replace(/[^A-zА-яЁё0-9,.-?!@& ]+/g, '');
+    if (process.env.NO_RUST) {
+      const text = message.replace(/[^A-zА-яЁё0-9,.-?!@& ]/g, '').replace(/<(.*?)> /g, '').slice(0, 500);
+      try {
+        const filePath = await genVoice.gen(text);
+        play(filePath);
+      } catch (err) {
+        logger.error(err);
+      }
+      return;
+    }
+
     try {
       await fetch(`${process.env.RUSTY_API_ADDRESS}:${process.env.RUSTY_API_PORT}/message/${username}/${encodeURIComponent(message)}`);
     } catch (err) {
